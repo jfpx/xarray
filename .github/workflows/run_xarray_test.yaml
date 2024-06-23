@@ -3,9 +3,6 @@ name: run_xarray_test
 on:
   workflow_dispatch:
    
-env:
-  FORCE_COLOR: 3
-
 jobs:
   test:
     name: ${{ matrix.os }} py${{ matrix.python-version }} ${{ matrix.env }}
@@ -35,6 +32,17 @@ jobs:
           repository: ${{ env.REPO_NAME }}
           path: ${{ env.REPO_PATH }}
           fetch-depth: 0 # Fetch all history for all branches and tags.
+  
+      # install miniconda so can install pandoc using conda
+      - name: Install Miniconda
+        run: |
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+          chmod +x Miniconda3-latest-Linux-x86_64.sh
+          bash ./Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda
+          conda update -n base -c defaults conda
+          conda config --set always_yes yes
+          source $HOME/miniconda/etc/profile.d/conda.sh
+          
       - name: Set environment variables
         run: |
           echo "TODAY=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
@@ -70,36 +78,45 @@ jobs:
 
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
 
-      - name: Setup micromamba
-        uses: mamba-org/setup-micromamba@v1
-        with:
-          environment-file: ${{ env.CONDA_ENV_FILE }}
-          environment-name: xarray-tests
-          cache-environment: true
-          cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{matrix.python-version}}-${{env.TODAY}}-${{hashFiles(env.CONDA_ENV_FILE)}}"
-          create-args: >-
-            python=${{matrix.python-version}}
-            conda
+      # create and activate the conda environment
+      - name: Create Conda Environment
+        run: |
+          conda create -n xarray-tests python=${{ matrix.python-version }}
+          conda env update -n xarray-tests -f ci/requirements/environment.yml
+          
+      # install python packages
+      - name: Install Python Packages
+        run: |
+          conda run -n xarray-tests conda install -c conda-forge requests
+          #conda run -n xarray-tests pip install .
 
-      # We only want to install this on one run, because otherwise we'll have
-      # duplicate annotations.
       - name: Install error reporter
         if: ${{ matrix.os }} == 'ubuntu-latest' and ${{ matrix.python-version }} == '3.12'
         run: |
+          source $HOME/miniconda/etc/profile.d/conda.sh
+          conda activate xarray-tests
           python -m pip install pytest-github-actions-annotate-failures
 
       - name: Install xarray
         run: |
+          source $HOME/miniconda/etc/profile.d/conda.sh
+          conda activate xarray-tests
           python -m pip install --no-deps -e .
 
       - name: Version info
         run: |
           conda info -a
           conda list
+          source $HOME/miniconda/etc/profile.d/conda.sh
+          conda activate xarray-tests
+          conda info -a
+          conda list
           python xarray/util/print_versions.py
 
       - name: Import xarray
         run: |
+          source $HOME/miniconda/etc/profile.d/conda.sh
+          conda activate xarray-tests
           python -c "import xarray"
 
       - name: Restore cached hypothesis directory
@@ -111,7 +128,10 @@ jobs:
           save-always: true
 
       - name: Run tests
-        run: python -m pytest -n 4
+        run: |
+          source $HOME/miniconda/etc/profile.d/conda.sh
+          conda activate xarray-tests
+          python -m pytest -n 4
           --timeout 180
           --cov=xarray
           --cov-report=xml
