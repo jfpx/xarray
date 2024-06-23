@@ -42,6 +42,8 @@ jobs:
           conda update -n base -c defaults conda
           conda config --set always_yes yes
           source $HOME/miniconda/etc/profile.d/conda.sh
+          ls $HOME/miniconda/etc/profile.d/
+          ls $HOME/miniconda
           
       - name: Set environment variables
         run: |
@@ -80,14 +82,19 @@ jobs:
 
       # create and activate the conda environment
       - name: Create Conda Environment
-        run: |
+        run: |        
+          conda info -a
+          conda list
           conda create -n xarray-tests python=${{ matrix.python-version }}
           conda env update -n xarray-tests -f ci/requirements/environment.yml
           
       # install python packages
       - name: Install Python Packages
-        run: |
+        run: |        
+          conda info -a
+          conda list
           conda run -n xarray-tests conda install -c conda-forge requests
+          conda activate xarray-tests
           #conda run -n xarray-tests pip install .
 
       - name: Install error reporter
