@@ -85,19 +85,14 @@ jobs:
           conda list
           conda create -n xarray-tests python=${{ matrix.python-version }}
           conda env update -n xarray-tests -f ci/requirements/environment.yml
-          export PATH="$HOME/miniconda/envs/xarray-tests/bin:$PATH"
-          export CONDA_PREFIX="$HOME/miniconda/envs/xarray-tests"
-          export CONDA_DEFAULT_ENV="xarray-tests"
+          PATH="$HOME/miniconda/envs/xarray-tests/bin:$PATH"
+          CONDA_PREFIX="$HOME/miniconda/envs/xarray-tests"
+          CONDA_DEFAULT_ENV="xarray-tests"
 
       # install python packages
       - name: Install Python Packages
         run: |
-          which conda
-          which python
-          which python3
-          which pip
           conda run -n xarray-tests conda install -c conda-forge numpy
-          conda run -n xarray-tests pip list
           conda run -n xarray-tests python3 -c "import numpy"
 
       - name: Install error reporter
@@ -107,7 +102,7 @@ jobs:
 
       - name: Install xarray
         run: |
-          conda run -n xarray-tests install --no-deps -e .
+          conda run -n xarray-tests pip install --no-deps -e .
 
       - name: Version info
         run: |
