@@ -91,38 +91,31 @@ jobs:
 
       # install python packages
       - name: Install Python Packages
-        run: |        
-          conda info -a
-          conda list
-          conda run -n xarray-tests conda install -c conda-forge requests
-          #conda run -n xarray-tests pip install .
+        run: |
+          which conda
+          which python
+          which python3
+          which pip
+          conda run -n xarray-tests conda install -c conda-forge numpy
+          conda run -n xarray-tests pip list
+          conda run -n xarray-tests python3 -c "import numpy"
 
       - name: Install error reporter
         if: ${{ matrix.os }} == 'ubuntu-latest' and ${{ matrix.python-version }} == '3.12'
         run: |
-          conda init
-          conda activate xarray-tests
-          python -m pip install pytest-github-actions-annotate-failures
+          conda run -n xarray-tests pip install pytest-github-actions-annotate-failures
 
       - name: Install xarray
         run: |
-          conda init
-          conda activate xarray-tests
-          python -m pip install --no-deps -e .
+          conda run -n xarray-tests install --no-deps -e .
 
       - name: Version info
         run: |
-          conda init
-          conda activate xarray-tests
-          conda info -a
-          conda list
-          python xarray/util/print_versions.py
+          conda run -n xarray-tests python3 xarray/util/print_versions.py
 
       - name: Import xarray
         run: |
-          conda init
-          conda activate xarray-tests
-          python -c "import xarray"
+          conda run -n xarray-tests python3 -c "import xarray"
 
       - name: Restore cached hypothesis directory
         uses: actions/cache@v4
@@ -134,9 +127,7 @@ jobs:
 
       - name: Run tests
         run: |
-          conda init
-          conda activate xarray-tests
-          python -m pytest -n 4
+          conda run -n xarray-tests python3 -m pytest -n 4
           --timeout 180
           --cov=xarray
           --cov-report=xml
